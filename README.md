@@ -5,6 +5,6 @@
 # 数据库
 
 - **CMU 15-445/645 Intro to Database Systems**
-  - Lectures  3/26
+  - Lectures  4/26
   - Homeworks 1/5 
   - Projects 0/5
