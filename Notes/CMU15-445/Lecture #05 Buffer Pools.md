@@ -47,13 +47,168 @@ page directory是用来通过page ids来找到page在database files中的位置�
 
 page table是内存中的内部映射，它将page id映射到它们在buffer pool中frame的位置。（它不需要在disk上进行备份，它不需要是持久化的，但我们必须确保它是线程安全的）
 
-## Allocation
+## Allocation Policies
 
+- **Global Policies:**Make decisions for all active txns.
 
+- **Local Policies:**Allocate frames to a specific txn without considering the behavior of concurrent txns，Still need to support sharing pages
 
+## Multiple Buffer Pools
 
+DBMS并不总是只有一个对应于整个系统的buffer pool。（per-database buffer pool，per-page type buffer pool）每个buffer pool可以有local policy。（caching policy，placement policy。根据workload来判断）
 
+当不同的threads想要尝试访问buffer pool时，减少latch contention（因为有了multiple page tables）。
 
+两种方式：
 
+- **Approach #1: Object Id**
 
+  将一个object identifier与record ids集成到一起。维护一个从object到特定buffer pool的映射。
+
+![2.PNG](https://i.loli.net/2021/02/22/3FnsV8mEqlIcD4X.png)
+
+- **Approach #2: Hashing**
+
+  通过hash来用page id选择buffer pool
+
+![3.PNG](https://i.loli.net/2021/02/22/A5yh9lbuPVMB8Gf.png)
+
+## Pre-Fetching
+
+减少DBMS由于要去disk读取数据而产生的stalls。
+
+基于特定的query plan（Sequential Scans，Index Scans）可以做prefetch。
+
+## Scan Sharing
+
+也叫 **synchronized scans**
+
+queries可以重复使用data（from storage，from operator computation）（与result caching 不同，）
+
+当scan一个table时，多个query可以依附于一个单独的cursor。（query不必是同一个，而且可以共享中间结果）
+
+DBMS可能会将一个query的cursor依附于另一个query的cursor
+
+## Buffer Pool Bypass
+
+The sequential scan operator will not store fetched pages in the buffer pool to avoid overhead.
+
+→ Memory is local to running query.
+
+→ Works well if operator needs to read a large sequence of pages that are contiguous on disk.
+
+→ Can also be used for temporary data (sorting, joins)
+
+## OS Page Cache
+
+Most disk operations go through the OS API.
+
+Unless you tell it not to, the OS maintains its own filesystem cache.
+
+Most DBMSs use direct I/O (**O_DIRECT**)to bypass the OS's cache.
+
+- Redundant copies of pages.
+
+- Different eviction policies
+
+## Buffer Replacement Policies
+
+Goals：
+
+- Correctness：如果某个数据没被真正的用完，那么就不能将它写出或移除
+- Accuracy：确保移除的page是未来不太会被用到的那些page
+- Speed：不希望寻找到的时间甚至比读取page的时间还长
+- Meta-data overhead：大量meta-data会带来开销，不希望page的meta-data比page本身还要大
+
+## Least-Recently Used
+
+维护一个page最后一次被访问时的timestamp。
+
+当DBMS需要去替换时，去替换那个拥有最老timestamp的page。（为了减少寻找时间，可以将page按顺序排列）
+
+## Clock
+
+LRU的近似算法（它无需追踪每一个page分别的timestamp），每个page有一个reference bit（当一个page被访问了，就将其置1）.
+
+将pages组织为一个带有一个clock hand的环形的buffer，然后有一个可以旋转的指针，它能够检查这个reference bit，如果是1，将其置0，如果是0，就移除它。
+
+（之所以说它是近似算法，是因为不会去精确地移除最近最少使用的那个page了。直观的来讲，如果这些page在一定时间内没被使用，那么它最近都不会再被使用）
+
+（它在某些简单的情况下效果非常好，比如在进行point query时访问单个东西）
+
+但CLock和LRU都容易受到sequential flooding的影响。
+
+## Problems
+
+当一个query进行sequential scan时，它会访问每个单独的page，这可能污染我们的page cache（因为这些pages只读一次，之后再也不读）。而the most recently used page实际上是那些最不需要的page。
+
+实际上希望移除的是那些最近被使用的，而不是那些最近最少被使用的。
+
+可以使用multiple buffer pool，不同的buffer pool使用不同的替换策略。
+
+## Better Policies：LRU-K
+
+Track the history of last *K* references to each page as timestamps and compute the interval between subsequent accesses.
+
+The DBMS then uses this history to estimate the next time that page is going to be accessed.
+
+## Better Policies：Localization
+
+The DBMS chooses which pages to evict on a per txn/query basis. This minimizes the pollution of the buffer pool from each query.
+
+→ Keep track of the pages that a query has accessed.
+
+Example: Postgres maintains a small ring buffer that is private to the query
+
+## Better Policies： Priority Hints
+
+The DBMS knows what the context of each page during query execution.
+
+It can provide hints to the buffer pool on whether a page is important or not.
+
+## Dirty Page
+
+dirty bit：表示自从一个page放入buffer pool后，它是否被修改过。
+
+**FAST:** If a page in the buffer pool is not dirty, then the DBMS can simply "drop" it.
+
+**SLOW:** If a page is dirty, then the DBMS must write back to disk to ensure that its changes are persisted.
+
+Trade-off between fast evictions versus dirty writing pages that will not be read again in the future.
+
+## Backgound Writing
+
+The DBMS can periodically walk through the page table and write dirty pages to disk.
+
+When a dirty page is safely written, the DBMS can either evict the page or just unset the dirty flag.
+
+Need to be careful that we don’t write dirty pages before their log records have been written…
+
+## Other Memory Pools
+
+The DBMS needs memory for things other than just tuples and indexes.
+
+These other memory pools may not always backedby disk. Depends on implementation.
+
+→ Sorting + Join Buffers
+
+→ Query Caches
+
+→ Maintenance Buffers
+
+→ Log Buffers
+
+→ Dictionary Caches
+
+## Conclusion
+
+The DBMS can manage that sweet, sweet memory better than the OS.
+
+Leverage the semantics about the query plan to make better decisions:
+
+→ Evictions
+
+→ Allocations
+
+→ Pre-fetching
 
