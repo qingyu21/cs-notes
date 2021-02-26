@@ -76,31 +76,81 @@ If you have a program without debug symbols, then you can’t use any of the abo
 
 ## Print Debug Info
 
+### print backtrace after the breakpoint
+
+`backtrace (or bt as shortcut)`
+
+`info stack`
+
+### execute a function to the end after a breakpoint
+
+`fin`
+
+### print the current stack of the executing program
+
+`where`
+
+### print the line number in GDB while debugging
+
+`frame`
+
+## Trace Variables
+
+### Print standard variable (int, char, etc.)
+
+`p <<variable>>`
+
+### Print structure variable
+
+`p <<structure>>`
+
+### Print pointer variable
+
+`p <<*ptr>>`
+
+### Print a Macro
+
+`p/x DBG_FLAG`
+
+### Print an Array
+
+`p arr`
+
+`p *&arr[96]@5`
+
+### Add Watchers
+
+`watch <<variable>>`
+
+## Continue, Step-in or Next Operations
+
+`c` to continue execution.
+
+`n` for executing the next line.
+
+`s` to step into the function.
+
+## Skip/Ignore Breakpoints
+
+`break test.cpp:18`
+
+`info breakpoints`
+
+`ignore 1 1000`
+
+`run`
+
+`info breakpoints`
+
+## Remove Breakpoints & Quit from GDB
+
+### Deleting a Breakpoint
+
+`d <<breakpoint num>>`
+
+### Quitting from the GDB debugger
+
+`q`
 
 
-
-
-
-
-## Inspecting crashes
-
-`backtree`
-
-`x 0xffbef014`
-
-## Conditional breakpoints
-
-`break LinkedList<int>::remove`
-
-`condition 1 item_to_remove==1`
-
-## Stepping
-
-`gdb` has the nice feature that when enter is pressed without typing a command, the last command is automatically used.
-
-`step`
-
-`next`
-
-`quit`
 
