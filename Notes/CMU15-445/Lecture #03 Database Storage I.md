@@ -58,7 +58,7 @@ Sequential Access（利于顺序存取，存取multiple contiguous chunks of dat
 
 ### persistant memory
 
-有一种新的存储设备类型被称为**Non-Volatile Memory**，Byte-Addressable但不会掉电失去数据）。几乎和DRM同样快，但和disk有着同样的persistence，这节课不涉及它。
+有一种新的存储设备类型被称为**Non-Volatile Memory**（非易失性内存NVM），Byte-Addressable但不会掉电失去数据）。几乎和DRAM同样快，但和disk有着同样的persistence，这节课不涉及它。
 
 我们关注于如何减小访问disk的延迟，而不去关注如何用registers或caches去优化。不同的存储器速度天差地别。
 
@@ -104,7 +104,7 @@ execution engine用于执行查询。它会向buffer pool请求一个特定的pa
 
 内存满了之后，不得不让DBMS停止request this page的线程。因为磁盘调度程序要从磁盘中拿到这个page，并将其放到内存中。
 
-数据库可能要去访问某些没在内存中的东西，所以可以将它交给另一条线程去做，它会停下来，但数据库不会。（我们希望当等待数据从disk转移到memory时，DBMS嫩巩固去处理其它的查询）
+数据库可能要去访问某些没在内存中的东西，所以可以将它交给另一条线程去做，它会停下来，但数据库不会。（我们希望当等待数据从disk转移到memory时，DBMS可以去处理其它的查询）
 
 ### 存在的问题
 
@@ -159,7 +159,7 @@ DBMS会给每个page独一无二的identifier（page ID）。DBMS使用一个ind
 
 存储设备以hardware page的大小确保了原子写操作，这意味着如果database page比hardware page大，那么DBMS必须采取额外的措施来确保pages被安全地写入。
 
-不同的DBMS有三种在位于disk的files中管理pages的方法（如何在disk中找到一个特定的page）：
+不同的DBMS有三种在位于disk的文件中管理pages的方法（如何在disk中找到一个特定的page）：
 
 - **Heap Files Organization**
 - Sequential/Sorted File Organization
@@ -252,7 +252,7 @@ Tuple=Header+Attribute Data
 
 Header（包括了tuple的meta-data）：Visibility information for concurrency control（哪些transaction创建/更改了这个tuple），Bit Map for NULL values。
 
-不需要去存schema的meta-data。
+它不需要去存schema的meta-data。
 
 #### Tuple Data
 
