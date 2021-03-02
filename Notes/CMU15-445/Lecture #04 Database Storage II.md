@@ -151,10 +151,14 @@ Ideal for OLAP workloads where read-only queries perform large scans over a subs
 
 #### Tuple Identification
 
-## @
-
 - **Choice #1: Fixed-length Offsets**（Each value is the same length for an attribute.）（most common）
+
+  - fixed-length：可以计算每个tuple的attribute的offset，当需要某个特定tuple的attribute时，可以通过offset知道要跳转到哪里
+  - variable-length：可以通过填充fields来保存（so that they are all the same length）。也可以使用一个dictionary，使用一个固定长度的整数，将它map到需要的value
+
 - **Choice #2: Embedded Tuple Ids**（Each value is stored with its tuple id in a column.）（less common）
+
+  ​	对于每个列的每个attribute，都保存一个tuple id（比如primary key）。系统还保存了一个mapping，用它可以知道如何跳转到拥有特定tuple id的attribute。（这种方法的存储开销特别大）
 
 ## Conclusion
 
