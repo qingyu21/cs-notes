@@ -9,6 +9,10 @@
   - Homeworks 1/5 
   - Projects 0/5
 
+# C++
+
+- Effective Modern C++ 0/42
+
 # 开发工具
 
 - **GDB**
